@@ -14,7 +14,7 @@ triplets1 = [['USDT_XMR', 'BTC_XMR', 'USDT_BTC'],['USDT_ETC', 'BTC_ETC', 'USDT_B
 triplets2 = [['USDT_BTC', 'BTC_ETH', 'USDT_ETH'],['USDT_BTC', 'BTC_LTC', 'USDT_LTC'],['USDT_BTC', 'BTC_XRP', 'USDT_XRP']]
 
 
-def wtd_bid(pair):
+def wtd_bid(pair, df):
     raw_bids = pd.DataFrame(df[pair]['bids'][0:5], columns=['price','volume'])
     raw_bids['price'] = pd.to_numeric(raw_bids['price'])
     raw_bids['volume'] = pd.to_numeric(raw_bids['volume'])
@@ -22,7 +22,7 @@ def wtd_bid(pair):
     wtd_bid_vol = raw_bids['volume'].sum()
     return(wtd_bid, wtd_bid_vol)
 
-def wtd_ask(pair):
+def wtd_ask(pair, df):
     raw_asks = pd.DataFrame(df[pair]['asks'][0:5], columns=['price','volume'])
     raw_asks['price'] = pd.to_numeric(raw_asks['price'])
     raw_asks['volume'] = pd.to_numeric(raw_asks['volume'])
@@ -30,8 +30,8 @@ def wtd_ask(pair):
     wtd_ask_vol = raw_asks['volume'].sum()
     return(wtd_ask, wtd_ask_vol)
 
-def wtd(pair):
-    return pd.DataFrame([wtd_bid(pair),wtd_ask(pair)], index=['BID','ASK'], columns=[pair, 'Volume'])
+def wtd(pair, df):
+    return pd.DataFrame([wtd_bid(pair, df),wtd_ask(pair, df)], index=['BID','ASK'], columns=[pair, 'Volume'])
 
 
 def capture():
@@ -48,7 +48,7 @@ def capture():
     df = pd.DataFrame(dict)
     return df
 
-def capture_analyze():
+def capture_analyze(time_1, df):
     """
     start with $1000, buy denom at ask - minus commission
     take second currency and buy numerator at bid - minus commission
@@ -57,9 +57,9 @@ def capture_analyze():
     """
 
     for triplet in triplets1:
-        step1 = 1000 / wtd(triplet[0]).loc['ASK'][triplet[0]]*.9985
-        step2 = step1 * wtd(triplet[1]).loc['BID'][triplet[1]]*.9985
-        USDT = step2 * wtd(triplet[2]).loc['BID'][triplet[2]]*.9985
+        step1 = 1000 / wtd(triplet[0], df).loc['ASK'][triplet[0]]*.9985
+        step2 = step1 * wtd(triplet[1], df).loc['BID'][triplet[1]]*.9985
+        USDT = step2 * wtd(triplet[2], df).loc['BID'][triplet[2]]*.9985
         print([USDT, triplet, time_1])
         if USDT > 1000:
             with open('log.csv', 'a', newline='') as f:
@@ -68,9 +68,9 @@ def capture_analyze():
 
 
     for triplet in triplets2:
-        step1 = 1000 / wtd(triplet[0]).loc['ASK'][triplet[0]]*.9985
-        step2 = step1 / wtd(triplet[1]).loc['ASK'][triplet[1]]*.9985
-        USDT = step2 * wtd(triplet[2]).loc['BID'][triplet[2]]*.9985
+        step1 = 1000 / wtd(triplet[0], df).loc['ASK'][triplet[0]]*.9985
+        step2 = step1 / wtd(triplet[1], df).loc['ASK'][triplet[1]]*.9985
+        USDT = step2 * wtd(triplet[2], df).loc['BID'][triplet[2]]*.9985
         print([USDT, triplet, time_1])
         if USDT > 1000:
             print([USDT, triplet, time_1])
@@ -83,8 +83,8 @@ def capture_analyze():
 def execute_go():
     time_1 = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
     time_1
-    capture()
-    capture_analyze()
+    df = capture()
+    capture_analyze(time_1, df)
 
 
 while True:
